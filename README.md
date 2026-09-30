@@ -112,6 +112,25 @@ scripts/
 evals/              # test prompts + fixtures
 ```
 
+## Local development
+
+When hacking on the skill itself, point your agent's skills directory at this repo so edits take effect immediately instead of re-copying.
+
+Windows (directory junction, no admin required):
+
+```powershell
+Remove-Item -Recurse "$env:USERPROFILE\.agents\skills\knowledgebase" -ErrorAction SilentlyContinue
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.agents\skills\knowledgebase" -Target "$PWD"
+```
+
+macOS / Linux (symlink):
+
+```bash
+ln -s "$PWD" ~/.agents/skills/knowledgebase
+```
+
+The link is local-only and never committed — normal users just `git clone` (see [Install](#install)). Two caveats: keep this directory in place (deleting it breaks the link), and don't `git clean` through the linked path.
+
 ## License
 
 Not yet specified.
