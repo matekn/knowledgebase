@@ -15,12 +15,16 @@ import os
 import sqlite3
 import sys
 import time
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
 # Must be set before fastembed / huggingface_hub import to take effect.
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("HF_HUB_VERBOSITY", "error")
+warnings.filterwarnings("ignore", message=r".*progress bars.*")
 
 try:
     import sqlite_vec

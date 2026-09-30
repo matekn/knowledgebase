@@ -49,7 +49,14 @@ def venv_python(venv: Path) -> Path:
     return venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
-def _run(cmd, env=None):
+def _run(cmd, env=None, quiet=False):
+    if quiet:
+        proc = subprocess.run(
+            cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
+        if proc.returncode != 0 and proc.stdout:
+            sys.stderr.write(proc.stdout)
+        return proc.returncode
     return subprocess.call(cmd, env=env)
 
 
@@ -109,12 +116,12 @@ def _repair_pip(py: Path, venv: Path, quiet: bool) -> None:
     if not quiet:
         print("[setup] repairing pip")
     os.environ.setdefault("PIP_DISABLE_PIP_VERSION_CHECK", "1")
-    _run([str(py), "-m", "ensurepip", "--upgrade"])
+    _run([str(py), "-m", "ensurepip", "--upgrade"], quiet=quiet)
     if not _pip_ok(py):
         if not quiet:
             print("[setup] recreating venv")
-        _run([sys.executable, "-m", "venv", "--clear", str(venv)])
-        _run([str(py), "-m", "ensurepip", "--upgrade"])
+        _run([sys.executable, "-m", "venv", "--clear", str(venv)], quiet=quiet)
+        _run([str(py), "-m", "ensurepip", "--upgrade"], quiet=quiet)
 
 
 def ensure(home: Path | None = None, force: bool = False, quiet: bool = True) -> Path:
@@ -134,7 +141,7 @@ def ensure(home: Path | None = None, force: bool = False, quiet: bool = True) ->
         if not py.exists():
             if not quiet:
                 print(f"[setup] creating venv at {venv}")
-            rc = _run([sys.executable, "-m", "venv", str(venv)])
+            rc = _run([sys.executable, "-m", "venv", str(venv)], quiet=quiet)
             if rc != 0 or not py.exists():
                 raise SystemExit(
                     "[setup] could not create a virtualenv with "
@@ -155,13 +162,13 @@ def ensure(home: Path | None = None, force: bool = False, quiet: bool = True) ->
         pip = [str(py), "-m", "pip", "install"]
         if not quiet:
             print("[setup] upgrading pip")
-        _run(pip + ["--upgrade", "pip"], env=env)
+        _run(pip + ["--upgrade", "pip"], env=env, quiet=quiet)
 
         if not quiet:
             print(f"[setup] installing {', '.join(deps)}")
         last = 0
         for attempt in range(3):
-            last = _run(pip + list(deps), env=env)
+            last = _run(pip + list(deps), env=env, quiet=quiet)
             if last == 0:
                 break
             if not quiet:
@@ -183,6 +190,8 @@ def predownload(home: Path, py: Path) -> None:
     env = dict(os.environ)
     env["FASTEMBED_CACHE_PATH"] = str(cache)
     env["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+    env["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+    env["HF_HUB_VERBOSITY"] = "error"
     print("[setup] downloading embedding model (one-time)…")
     subprocess.check_call(
         [str(py), "-c",
