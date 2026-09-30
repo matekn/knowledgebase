@@ -1,0 +1,5 @@
+# Runtime dependencies for the knowledgebase skill.
+# Installed automatically into $KB_HOME/.venv on first use (see scripts/setup.py).
+sqlite-vec==0.1.9
+fastembed==0.8.1
+pypdf>=4

@@ -1,0 +1,30 @@
+{
+  "skill_name": "knowledgebase",
+  "notes": "Prompts use the <skill-dir> placeholder, which the eval runner must substitute with the absolute path of this skill directory at run time. Fixture files live under evals/files/ and are copied to a neutral temp location before runs so baselines cannot discover the skill via the input path.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "index-and-answer",
+      "prompt": "I've got a folder of team docs at <skill-dir>/evals/files/docs. Add them to my knowledge base under the collection 'docs', then tell me what they say about restoring database backups and how long we keep them.",
+      "expected_output": "The docs folder is indexed into the 'docs' collection (4 files), and the answer states backups are retained 30 days in the eu-west-1 bucket and restored with `restore --from <timestamp>`.",
+      "files": ["evals/files/docs"],
+      "assertions": []
+    },
+    {
+      "id": 1,
+      "name": "collection-scoping",
+      "prompt": "I keep a couple of folders of notes: work stuff in <skill-dir>/evals/files/work and personal stuff in <skill-dir>/evals/files/personal. Index them into my knowledge base with the work one tagged 'work' and the personal one tagged 'personal'. Then search only my personal notes for how to keep my sourdough starter happy.",
+      "expected_output": "Two collections exist ('work' with 2 sources, 'personal' with 2 sources). The scoped search returns sourdough content from the personal folder (26C, hydration to 78%, preheat 45 min) and does NOT return work deploy/sprint content.",
+      "files": ["evals/files/work", "evals/files/personal"],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "name": "index-then-remove",
+      "prompt": "Please add the files in <skill-dir>/evals/files/cleanup to my knowledge base under 'cleanup'. Then remove the runbook from it - I'm superseding it - and confirm that searching for how to restore backups no longer returns anything.",
+      "expected_output": "Both cleanup files are indexed; runbook.md is removed by source; a subsequent search for restoring backups returns no runbook hits (either no results or only non-runbook content).",
+      "files": ["evals/files/cleanup"],
+      "assertions": []
+    }
+  ]
+}

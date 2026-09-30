@@ -1,0 +1,11 @@
+# Local store and bootstrap artifacts (created under $KB_HOME, never committed)
+.knowledgebase/
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
