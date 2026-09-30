@@ -14,14 +14,20 @@ A fast, self-contained local knowledge base (RAG) for adding, searching, listing
 
 ## Install
 
-Copy this folder into your agent's skills directory. For opencode/Claude-style layouts:
+Clone the repo straight into your agent's skills directory:
 
 ```bash
 # macOS / Linux
-cp -r knowledgebase ~/.agents/skills/knowledgebase
+git clone https://github.com/matekn/knowledgebase.git ~/.agents/skills/knowledgebase
 
 # Windows (PowerShell)
-Copy-Item -Recurse knowledgebase "$env:USERPROFILE\.agents\skills\knowledgebase"
+git clone https://github.com/matekn/knowledgebase.git "$env:USERPROFILE\.agents\skills\knowledgebase"
+```
+
+Prefer not to use git? Copy the folder instead:
+
+```bash
+cp -r knowledgebase ~/.agents/skills/knowledgebase
 ```
 
 No `pip install` needed — `scripts/run.py` bootstraps everything on first use.
