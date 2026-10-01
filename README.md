@@ -97,7 +97,7 @@ python scripts/run.py add ./dokumentumok --model multilingual
 python scripts/run.py search "mennyi ideig őrzik a mentéseket" --model multilingual
 ```
 
-Select via `--model <preset|model-id>` or the `KB_MODEL` env var (any fastembed model id works, not just the presets). A store records the model it was built with; switching models on a populated store is refused — use a separate `KB_HOME` for a different model.
+Select via `--model <preset|model-id>` or the `KB_MODEL` env var (any fastembed model id works, not just the presets). A store remembers its model and later commands reuse it automatically, so you only pass `--model` when creating a store or overriding. Switching models on a populated store is refused — use a separate `KB_HOME` for a different model.
 
 ## Configuration
 

@@ -87,6 +87,22 @@ def set_model_cache(home: Path) -> None:
     os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
 
+def store_model(home: Path) -> str | None:
+    """Read the embedding model a store was built with, if any."""
+    db_path = home / "kb.db"
+    if not db_path.exists():
+        return None
+    try:
+        con = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+        try:
+            row = con.execute("select value from meta where key='model'").fetchone()
+        finally:
+            con.close()
+        return row[0] if row and row[0] else None
+    except sqlite3.Error:
+        return None
+
+
 def eprint(*a):
     sys.stderr.write(" ".join(str(x) for x in a) + "\n")
 
@@ -698,11 +714,16 @@ def main(argv=None):
     except Exception:  # noqa: BLE001
         pass
     args = build_parser().parse_args(argv)
-    MODEL_NAME = resolve_model(args.model or os.environ.get("KB_MODEL", DEFAULT_MODEL))
+    home = Path(args.kb_home).expanduser() if args.kb_home else kb_home()
+    explicit = args.model or os.environ.get("KB_MODEL")
+    if explicit:
+        MODEL_NAME = resolve_model(explicit)
+    else:
+        # No explicit choice: reuse the store's model so existing stores "just work".
+        MODEL_NAME = resolve_model(store_model(home) or DEFAULT_MODEL)
     if args.command == "models":
         cmd_models(args)
         return
-    home = Path(args.kb_home).expanduser() if args.kb_home else kb_home()
     set_model_cache(home)
     store = Store(home)
     args.func(args, store)

@@ -83,7 +83,7 @@ python <skill-dir>/scripts/run.py add ./docs --model multilingual
 python <skill-dir>/scripts/run.py search "..." --model multilingual
 ```
 
-Use the same `--model` for `add` and `search`. A store records the model it was built with, so switching models on a populated store is refused — build a separate store via a different `KB_HOME` instead.
+A store remembers the model it was built with, and later commands reuse it automatically — pass `--model` only when creating a store or overriding. Switching models on a populated store is refused; build a separate store via a different `KB_HOME` instead.
 
 ## Supported files
 
