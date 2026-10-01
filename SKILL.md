@@ -66,6 +66,25 @@ python <skill-dir>/scripts/run.py list --exclude-collection archive
 
 - `remove` is scoped to a single `--collection` (or `--all`).
 
+## Languages and models
+
+The default model (`BAAI/bge-small-en-v1.5`) is English-only. For Hungarian or mixed-language content, pick a multilingual model with `--model` (or the `KB_MODEL` env var):
+
+| Preset | Languages | Dim | Speed |
+| --- | --- | --- | --- |
+| `en` | English | 384 | fastest (default) |
+| `multilingual` | ~50 incl. Hungarian | 384 | fast |
+| `multilingual-base` | ~50 incl. Hungarian | 768 | slower |
+| `multilingual-e5-large` | 100+ | 1024 | slow, best quality |
+
+```bash
+python <skill-dir>/scripts/run.py models                        # list options
+python <skill-dir>/scripts/run.py add ./docs --model multilingual
+python <skill-dir>/scripts/run.py search "..." --model multilingual
+```
+
+Use the same `--model` for `add` and `search`. A store records the model it was built with, so switching models on a populated store is refused — build a separate store via a different `KB_HOME` instead.
+
 ## Supported files
 
 Plain text, Markdown, and common code/config formats, plus PDF (text layer). Directories are walked recursively, skipping noise dirs like `.git`, `node_modules`, `.venv`. Binary or unsupported files are skipped with a warning.

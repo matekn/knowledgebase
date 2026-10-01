@@ -36,7 +36,21 @@ except ImportError as exc:  # pragma: no cover - handled by run.py bootstrap
     )
     raise SystemExit(3)
 
-MODEL_NAME = os.environ.get("KB_MODEL", "BAAI/bge-small-en-v1.5")
+DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
+# Friendly aliases for common choices. Any fastembed model id also works directly.
+MODEL_PRESETS = {
+    "en": "BAAI/bge-small-en-v1.5",
+    "multilingual": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "multilingual-base": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+    "multilingual-e5-large": "intfloat/multilingual-e5-large",
+}
+
+
+def resolve_model(name: str) -> str:
+    return MODEL_PRESETS.get(name, name)
+
+
+MODEL_NAME = resolve_model(os.environ.get("KB_MODEL", DEFAULT_MODEL))
 SCHEMA_VERSION = "1"
 MAX_FILE_MB = float(os.environ.get("KB_MAX_FILE_MB", "25"))
 
@@ -196,6 +210,7 @@ class Store:
 
     def _init_vec(self, dim: int):
         row = self.db.execute("select value from meta where key='dim'").fetchone()
+        model_row = self.db.execute("select value from meta where key='model'").fetchone()
         if row is None:
             self.db.execute(
                 f"create virtual table if not exists vec_chunks using vec0("
@@ -205,11 +220,32 @@ class Store:
             self.db.execute("insert or replace into meta values('model', ?)", (MODEL_NAME,))
             self.db.execute("insert or replace into meta values('schema', ?)", (SCHEMA_VERSION,))
             self.db.commit()
-        elif int(row[0]) != dim:
-            raise SystemExit(
-                f"Store was built with dim={row[0]} but model {MODEL_NAME} produces {dim}. "
-                "Set KB_MODEL to the original model or reindex from scratch."
+            return
+
+        stored_dim = int(row[0])
+        stored_model = model_row[0] if model_row else "(unknown)"
+        if stored_model == MODEL_NAME and stored_dim == dim:
+            return
+
+        # Model or dimension changed. Only safe when nothing is indexed yet.
+        n = self.db.execute("select count(*) from chunks").fetchone()[0]
+        if n == 0:
+            self.db.execute("drop table if exists vec_chunks")
+            self.db.execute(
+                f"create virtual table vec_chunks using vec0("
+                f"embedding float[{dim}] distance_metric=cosine)"
             )
+            self.db.execute("insert or replace into meta values('dim', ?)", (str(dim),))
+            self.db.execute("insert or replace into meta values('model', ?)", (MODEL_NAME,))
+            self.db.commit()
+            return
+
+        raise SystemExit(
+            f"Store was built with model '{stored_model}' (dim={stored_dim}) but this run "
+            f"uses '{MODEL_NAME}' (dim={dim}). A populated store cannot switch embedding "
+            "models. Point KB_HOME at a new location to build a separate store for this "
+            "model, or clear the current one first."
+        )
 
     def ensure_vec(self):
         self.model()
@@ -567,6 +603,30 @@ def cmd_stats(args, store: Store):
     print(f"chunks  : {s['chunks']}")
 
 
+def cmd_models(args):
+    rows = [
+        ("en", "BAAI/bge-small-en-v1.5", 384, "English only, fastest (default)"),
+        ("multilingual", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+         384, "~50 languages incl. Hungarian; small and fast"),
+        ("multilingual-base", "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+         768, "Better multilingual quality, slower"),
+        ("multilingual-e5-large", "intfloat/multilingual-e5-large",
+         1024, "Best multilingual quality; large and slow"),
+    ]
+    if args.json:
+        print(json.dumps(
+            [{"preset": p, "model": m, "dim": d, "notes": n} for p, m, d, n in rows], indent=2
+        ))
+        return
+    print(f"current model: {MODEL_NAME}\n")
+    print(f"{'preset':<22} {'dim':>5}  model")
+    for p, m, d, n in rows:
+        print(f"{p:<22} {d:>5}  {m}")
+        print(f"{'':<22} {'':>5}  {n}")
+    print("\nSelect with  --model <preset|model-id>  or the KB_MODEL env var.")
+    print("A populated store cannot change models; use a fresh KB_HOME for a different one.")
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="kb", description="Local knowledge base (RAG) CLI")
     common = argparse.ArgumentParser(add_help=False)
@@ -575,6 +635,12 @@ def build_parser():
         help="Override store location (default $KB_HOME or ~/.knowledgebase)",
     )
     common.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    common.add_argument(
+        "--model",
+        "-m",
+        help="Embedding model id or preset (en, multilingual, multilingual-base, "
+        "multilingual-e5-large). Overrides KB_MODEL; must match the store's model.",
+    )
     sub = p.add_subparsers(dest="command", required=True)
 
     a = sub.add_parser("add", parents=[common], help="Add files or directories")
@@ -618,16 +684,24 @@ def build_parser():
         func=cmd_collections
     )
     sub.add_parser("stats", parents=[common], help="Show store stats").set_defaults(func=cmd_stats)
+    sub.add_parser(
+        "models", parents=[common], help="List recommended embedding models"
+    ).set_defaults(func=cmd_models)
     return p
 
 
 def main(argv=None):
+    global MODEL_NAME
     try:
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
     except Exception:  # noqa: BLE001
         pass
     args = build_parser().parse_args(argv)
+    MODEL_NAME = resolve_model(args.model or os.environ.get("KB_MODEL", DEFAULT_MODEL))
+    if args.command == "models":
+        cmd_models(args)
+        return
     home = Path(args.kb_home).expanduser() if args.kb_home else kb_home()
     set_model_cache(home)
     store = Store(home)

@@ -80,12 +80,31 @@ Every source is tagged with a `--collection` (default `default`). The store is g
 - `search` / `list` accept a repeatable `--collection` (include any) and `--exclude-collection` (exclude). Omit both to span everything.
 - `remove` is scoped to a single `--collection` (or `--all`).
 
+## Models & languages
+
+The default model is English-only. For Hungarian (or mixed-language) content, use a multilingual model:
+
+| Preset | Languages | Dim | Speed |
+| --- | --- | --- | --- |
+| `en` | English | 384 | fastest (default) |
+| `multilingual` | ~50 incl. Hungarian | 384 | fast |
+| `multilingual-base` | ~50 incl. Hungarian | 768 | slower |
+| `multilingual-e5-large` | 100+ | 1024 | slow, best quality |
+
+```bash
+python scripts/run.py models                                    # list options
+python scripts/run.py add ./dokumentumok --model multilingual
+python scripts/run.py search "mennyi ideig őrzik a mentéseket" --model multilingual
+```
+
+Select via `--model <preset|model-id>` or the `KB_MODEL` env var (any fastembed model id works, not just the presets). A store records the model it was built with; switching models on a populated store is refused — use a separate `KB_HOME` for a different model.
+
 ## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `KB_HOME` | `~/.knowledgebase` | Store location (`kb.db`, `.venv`, `models/`). |
-| `KB_MODEL` | `BAAI/bge-small-en-v1.5` | Embedding model (384-dim). One model per store. |
+| `KB_MODEL` | `BAAI/bge-small-en-v1.5` | Embedding model id or preset (`en`, `multilingual`, `multilingual-base`, `multilingual-e5-large`). One model per store. |
 | `KB_MAX_FILE_MB` | `25` | Skip files larger than this. |
 
 ## Supported files
