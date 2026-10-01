@@ -52,7 +52,7 @@ def resolve_model(name: str) -> str:
 
 MODEL_NAME = resolve_model(os.environ.get("KB_MODEL", DEFAULT_MODEL))
 SCHEMA_VERSION = "1"
-MAX_FILE_MB = float(os.environ.get("KB_MAX_FILE_MB", "25"))
+MAX_FILE_MB = float(os.environ.get("KB_MAX_FILE_MB", "100"))
 
 TEXT_EXTS = {
     ".txt", ".md", ".markdown", ".rst", ".org", ".tex", ".log", ".csv", ".tsv",

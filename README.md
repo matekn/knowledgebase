@@ -105,7 +105,7 @@ Select via `--model <preset|model-id>` or the `KB_MODEL` env var (any fastembed 
 | --- | --- | --- |
 | `KB_HOME` | `~/.knowledgebase` | Store location (`kb.db`, `.venv`, `models/`). |
 | `KB_MODEL` | `BAAI/bge-small-en-v1.5` | Embedding model id or preset (`en`, `multilingual`, `multilingual-base`, `multilingual-e5-large`). One model per store. |
-| `KB_MAX_FILE_MB` | `25` | Skip files larger than this. |
+| `KB_MAX_FILE_MB` | `100` | Skip files larger than this. |
 
 ## Supported files
 
